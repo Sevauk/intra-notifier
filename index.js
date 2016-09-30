@@ -21,23 +21,27 @@ const get = url => {
 
 // create a bot
 var bot = new SlackBot({
-    token: 'xoxb-36845936224-doDCYQsU2N1Dl9Jec3e7VjVe', // Add a bot https://my.slack.com/services/new/bot and put the token
+    token: 'xoxb', // Add a bot https://my.slack.com/services/new/bot and put the token
     name: 'jarvis'
 });
 
 const say = (channel, what) => bot.postMessageToChannel(channel, what)
 
-const notif = title => {
-
-	say('urgence', title)
-        .then(() => process.exit())
-}
+const notif = title =>
+  say('urgence', title)
+    .then(() => process.exit())
 
 
 
 const detectNotif = json => {
-  fs.readFile(lastPath, (err, res) => {
 
+  if (json.board.length === 0) {
+    return say("general", "J\'ai recontré un problème d'authentification")
+  }
+
+  return new Promise((resolve, reject) => {
+
+  fs.readFile(lastPath, (err, res) => {
 
     const moduleslen = json['board']['modules'].length
     const notifs = json['history']
@@ -45,13 +49,13 @@ const detectNotif = json => {
     if (!err) {
 
 
-let last = {notifid: 0, moduleslen: 0}
+      let last = {notifid: 0, moduleslen: 0}
 
-	try {
-      last = JSON.parse(res.toString())
-} catch (e) {
-}
-	
+      try {
+        last = JSON.parse(res.toString())
+      } catch (e) {
+      }
+
       const id = last.notifid
       const newId = notifs[0].id
 
@@ -64,15 +68,17 @@ let last = {notifid: 0, moduleslen: 0}
     }
 
     const fileContent = JSON.stringify({'notifid': notifs[0].id, moduleslen})
+
     fs.writeFile(lastPath, fileContent, (err) => {
-	if (err) console.log(err)
-	process.exit()
-})
+	      if (err) console.log(err)
+        resolve()
+    })
+  })
   })
 }
 
 
-get('https://intra.epitech.eu/auth-2991948b7e99b1d6482ce93f803b44d17ef73822')
+get('https://intra.epitech.eu/auth-82f56bda6f9bde4e26960922e98f6df081bcf4ed')
   .then(() => {
     say('botalive', 'I\'m performing a check')
 	.catch(err => console.log(err))
@@ -80,3 +86,4 @@ get('https://intra.epitech.eu/auth-2991948b7e99b1d6482ce93f803b44d17ef73822')
   .catch(err => console.log("Got error: " + err.message))
   .then(() => get('https://intra.epitech.eu/?format=json'))
   .then(json => detectNotif(JSON.parse(json)))
+  .then(process.exit)
