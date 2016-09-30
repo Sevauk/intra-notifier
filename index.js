@@ -1,12 +1,11 @@
 var request = require('request')
 var SlackBot = require('slackbots');
+const lastPath = '/tmp/last.txt'
 const fs = require('fs')
 
 const http = require('https')
 
 var cookieJar = request.jar();
-
-let cheerio = require('cheerio')
 
 const get = url => {
 
@@ -20,27 +19,24 @@ const get = url => {
   })
 }
 
+// create a bot
+var bot = new SlackBot({
+    token: 'xoxb-36845936224-doDCYQsU2N1Dl9Jec3e7VjVe', // Add a bot https://my.slack.com/services/new/bot and put the token
+    name: 'jarvis'
+});
+
+const say = (channel, what) => bot.postMessageToChannel(channel, what)
+
 const notif = title => {
 
-  // create a bot
-  var bot = new SlackBot({
-      token: 'xoxb-36845936224-gAFAStUZYaKbwZzLEqTdCfal', // Add a bot https://my.slack.com/services/new/bot and put the token
-      name: 'jarvis'
-  });
-
-  bot.on('start', function() {
-      // more information about additional params https://api.slack.com/methods/chat.postMessage
-      var params = {
-      };
-
-      // define channel, where bot exist. You can adjust it there https://my.slack.com/services
-      bot.postMessageToChannel('urgence', title, params)
+	say('urgence', title)
         .then(() => process.exit())
-  })
 }
 
+
+
 const detectNotif = json => {
-  fs.readFile('last.txt', (err, res) => {
+  fs.readFile(lastPath, (err, res) => {
 
 
     const moduleslen = json['board']['modules'].length
@@ -48,8 +44,14 @@ const detectNotif = json => {
 
     if (!err) {
 
-      const last = JSON.parse(res.toString())
 
+let last = {notifid: 0, moduleslen: 0}
+
+	try {
+      last = JSON.parse(res.toString())
+} catch (e) {
+}
+	
       const id = last.notifid
       const newId = notifs[0].id
 
@@ -61,11 +63,20 @@ const detectNotif = json => {
       }
     }
 
-    fs.writeFile('last.txt', JSON.stringify({'notifid': notifs[0].id, moduleslen}))
+    const fileContent = JSON.stringify({'notifid': notifs[0].id, moduleslen})
+    fs.writeFile(lastPath, fileContent, (err) => {
+	if (err) console.log(err)
+	process.exit()
+})
   })
 }
 
+
 get('https://intra.epitech.eu/auth-2991948b7e99b1d6482ce93f803b44d17ef73822')
+  .then(() => {
+    say('botalive', 'I\'m performing a check')
+	.catch(err => console.log(err))
+  })
   .catch(err => console.log("Got error: " + err.message))
   .then(() => get('https://intra.epitech.eu/?format=json'))
   .then(json => detectNotif(JSON.parse(json)))

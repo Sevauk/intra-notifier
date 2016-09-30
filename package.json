@@ -9,9 +9,6 @@
   "author": "Adrien Morel",
   "license": "ISC",
   "dependencies": {
-    "cheerio": "^0.22.0",
-    "jQuery": "^1.7.4",
-    "jsdom": "^9.5.0",
     "slackbots": "^0.5.2"
   }
 }
