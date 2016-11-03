@@ -7,6 +7,8 @@ const http = require('https')
 
 var cookieJar = request.jar();
 
+var config = undefined
+
 const get = url => {
 
   return new Promise((resolve, reject) => {
@@ -20,17 +22,6 @@ const get = url => {
 }
 
 
-// create a bot
-var bot = new SlackBot({
-    token: '', // Add a bot https://my.slack.com/services/new/bot and put the token
-    name: 'jarvis'
-});
-
-const say = (channel, what) => bot.postMessageToChannel(channel, what)
-
-const notif = title =>
-  say('urgence', title)
-
 function doDiffModules(before, now) {
   
   const filtered =
@@ -38,10 +29,10 @@ function doDiffModules(before, now) {
   return filtered.map((e) => e.title)
 }
 
-const detectNotif = json => {
+const detectNotif = (bot, json) => {
 
   if (json.board.length === 0) {
-    return say("general", "J\'ai recontré un problème d'authentification")
+    return bot.say("general", "J\'ai recontré un problème d'authentification")
   }
 
   return new Promise((resolve, reject) => {
@@ -72,23 +63,40 @@ const detectNotif = json => {
         const diffLen = modulesDiff.length
 
       	if (id !== newId) {
-      	  notif('Une nouvelle notification est apparue sur l\'intra d\'Adrien. ' + notifs[0].title)
+      	  bot.notif(`Une nouvelle notification est apparue sur l'intra de ${config['your-name']} ${notifs[0].title}`)
 		.then(() => resolve())
+          .catch(err => reject(err))
       	}
       if (diffLen > 0) {
           const str = diffLen > 1 ? 'modules ont' : 'module a'
-      	  notif(`${diffLen} ${str} ouvert: ${modulesDiff.join('\n')}`)
+      	  bot.notif(`${diffLen} ${str} ouvert: ${modulesDiff.join('\n')}`)
 		.then(() => resolve())
+          .catch(err => reject(err))
       	}
-      	say('botalive', `Everything\'s good. Notifid: ${notifs[0].id}. Modules: ${modules}`)
+      	bot.say('botalive', `Everything\'s good. Notifid: ${notifs[0].id}. Modules: ${modules}`)
 		.then(() => resolve())
+        .catch(err => reject(err))
       })
   })
   })
 }
 
+fs.readFile('config', (err, res) => {
+  config = JSON.parse(res)
 
-get('https://intra.epitech.eu/PUT AUTOLOGIN HERE')
-  .catch(err => console.log("Got error: " + err.message))
-  .then(() => get('https://intra.epitech.eu/?format=json'))
-  .then(json => detectNotif(JSON.parse(json)))
+  // create a bot
+  const bot = new SlackBot({
+      token: config['bot-token'], // Add a bot https://my.slack.com/services/new/bot and put the token
+      name: config['bot-name']
+  });
+  
+  bot.say = (channel, what) => bot.postMessageToChannel(channel, what)
+
+  bot.notif = title => bot.say(config['main-channel'], title)
+
+  get(config['intra-autologin'])
+    .catch(err => console.log("Got error: " + err.message))
+    .then(() => get('https://intra.epitech.eu/?format=json'))
+    .then(json => detectNotif(bot, JSON.parse(json)))
+    .catch(err => console.error(err))
+})

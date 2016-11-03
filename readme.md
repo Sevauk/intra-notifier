@@ -7,6 +7,8 @@ Comment utiliser ?
 ----
 
 1. Créer un bot slack (https://storit.slack.com/apps/A0F7YS25R-bots)
-2. Renseigner le token et le nom du bot dans index.js (environ ligne 23)
-3. Renseigner les channels utilisés par le bot (dans le code c'est réglé sur "urgence" et "general")
+2. Remplir les champs nécessaires dans le fichier "config-sample"
+3. Renommer le fichier "config-sample" en "config"
 4. Lancer le script tout les x minutes/heures avec un Cron job par exemple.
+
+Envoyez moi un mail si ça marche pas.
