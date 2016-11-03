@@ -88,7 +88,7 @@ const detectNotif = json => {
 }
 
 
-get('https://intra.epitech.eu/auth-82f56bda6f9bde4e26960922e98f6df081bcf4ed')
+get('https://intra.epitech.eu/PUT AUTOLOGIN HERE')
   .catch(err => console.log("Got error: " + err.message))
   .then(() => get('https://intra.epitech.eu/?format=json'))
   .then(json => detectNotif(JSON.parse(json)))
