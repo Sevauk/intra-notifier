@@ -19,9 +19,10 @@ const get = url => {
   })
 }
 
+
 // create a bot
 var bot = new SlackBot({
-    token: 'xoxb-36845936224-84D6ASJIkJWjFMUksH7gZNv5', // Add a bot https://my.slack.com/services/new/bot and put the token
+    token: 'thetoken', // Add a bot https://my.slack.com/services/new/bot and put the token
     name: 'jarvis'
 });
 
