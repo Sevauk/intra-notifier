@@ -22,7 +22,7 @@ const get = url => {
 
 // create a bot
 var bot = new SlackBot({
-    token: 'thetoken', // Add a bot https://my.slack.com/services/new/bot and put the token
+    token: '', // Add a bot https://my.slack.com/services/new/bot and put the token
     name: 'jarvis'
 });
 
@@ -31,7 +31,12 @@ const say = (channel, what) => bot.postMessageToChannel(channel, what)
 const notif = title =>
   say('urgence', title)
 
-
+function doDiffModules(before, now) {
+  
+  const filtered =
+    now.filter((e) => before.find((elem) => elem.title === e.title) === undefined)
+  return filtered.map((e) => e.title)
+}
 
 const detectNotif = json => {
 
@@ -43,38 +48,41 @@ const detectNotif = json => {
 
   fs.readFile(lastPath, (err, res) => {
 
-    const moduleslen = json['board']['modules'].length
+
+    const modules = json['board']['modules']
     const notifs = json['history']
 
+    let last = {notifid: 0, modules: []}
+
     if (!err) {
-
-
-      let last = {notifid: 0, moduleslen: 0}
-
       try {
         last = JSON.parse(res.toString())
       } catch (e) {
       }
+    }
 
-      const fileContent = JSON.stringify({'notifid': notifs[0].id, moduleslen})
+      const fileContent = JSON.stringify({'notifid': notifs[0].id, modules}, null, 4)
 
       fs.writeFile(lastPath, fileContent, (err) => {
           if (err) console.log(err)
       	const id = last.notifid
       	const newId = notifs[0].id
 
+        const modulesDiff = doDiffModules(last.modules, modules)
+        const diffLen = modulesDiff.length
+
       	if (id !== newId) {
       	  notif('Une nouvelle notification est apparue sur l\'intra d\'Adrien. ' + notifs[0].title)
 		.then(() => resolve())
-      	} else if (last.moduleslen !== moduleslen) {
-      	  notif('Des modules ont ouvert (total: ' + moduleslen + ' modules)')
-		.then(() => resolve())
-      	} else {
-      	  say('botalive', `Everything\'s good. Notifid: ${notifs[0].id}. Modules: ${moduleslen}`)
+      	}
+      if (diffLen > 0) {
+          const str = diffLen > 1 ? 'modules ont' : 'module a'
+      	  notif(`${diffLen} ${str} ouvert: ${modulesDiff.join('\n')}`)
 		.then(() => resolve())
       	}
+      	say('botalive', `Everything\'s good. Notifid: ${notifs[0].id}. Modules: ${modules}`)
+		.then(() => resolve())
       })
-    }
   })
   })
 }
