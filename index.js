@@ -1,7 +1,8 @@
 var request = require('request')
 var SlackBot = require('slackbots');
-const lastPath = '/tmp/last.txt'
-const fs = require('fs')
+const bluebird = require('bluebird')
+const lastPath = './last.txt'
+const fs = bluebird.promisifyAll(require('fs'))
 
 const http = require('https')
 
@@ -31,32 +32,27 @@ function doDiffModules(before, now) {
 
 const detectNotif = (bot, json) => {
 
-  console.log(json)
   if (json.board.length === 0) {
     return bot.say("general", "L'intra a renvoyé une erreur: " + JSON.parse(json, null, 2))
   }
 
-  return new Promise((resolve, reject) => {
+  let last = null
+  let modules = null
+  let notifs = null
 
-  fs.readFile(lastPath, (err, res) => {
+  return fs.readFileAsync(lastPath)
+	.then((res) => {
 
 
-    const modules = json['board']['modules']
-    const notifs = json['history']
+    	modules = json['board']['modules']
+    	notifs = json['history']
 
-    let last = {notifid: 0, modules: []}
+       	last = JSON.parse(res.toString())
+      	return JSON.stringify({'notifid': notifs[0].id, modules}, null, 4)
 
-    if (!err) {
-      try {
-        last = JSON.parse(res.toString())
-      } catch (e) {
-      }
-    }
-
-      const fileContent = JSON.stringify({'notifid': notifs[0].id, modules}, null, 4)
-
-      fs.writeFile(lastPath, fileContent, (err) => {
-          if (err) console.log(err)
+	})
+	.then((fileContent) => fs.writeFileAsync(lastPath, fileContent))
+	.then(() => {
       	const id = last.notifid
       	const newId = notifs[0].id
 
@@ -65,21 +61,14 @@ const detectNotif = (bot, json) => {
 
       	if (id !== newId) {
       	  bot.notif(`Une nouvelle notification est apparue sur l'intra de ${config['your-name']} ${notifs[0].title}`)
-		.then(() => resolve())
-          .catch(err => reject(err))
+          	.catch(err => reject(err))
       	}
       if (diffLen > 0) {
           const str = diffLen > 1 ? 'modules ont' : 'module a'
-      	  bot.notif(`${diffLen} ${str} ouvert: ${modulesDiff.join('\n')}`)
-		.then(() => resolve())
-          .catch(err => reject(err))
+      	  return bot.notif(`${diffLen} ${str} ouvert: ${modulesDiff.join('\n')}`)
       	}
-      	bot.say('botalive', `Everything\'s good. Notifid: ${notifs[0].id}`)
-		.then(() => resolve())
-        .catch(err => reject(err))
+      	return bot.say('botalive', `Everything\'s good. Notifid: ${notifs[0].id}`)
       })
-  })
-  })
 }
 
 fs.readFile(__dirname + '/config', (err, res) => {
@@ -100,4 +89,5 @@ fs.readFile(__dirname + '/config', (err, res) => {
     .then(() => get('https://intra.epitech.eu/?format=json'))
     .then(json => detectNotif(bot, JSON.parse(json)))
     .catch(err => console.error(err))
+    .then(() => process.exit())
 })
