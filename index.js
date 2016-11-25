@@ -31,8 +31,9 @@ function doDiffModules(before, now) {
 
 const detectNotif = (bot, json) => {
 
+  console.log(json)
   if (json.board.length === 0) {
-    return bot.say("general", "J\'ai recontré un problème d'authentification")
+    return bot.say("general", "L'intra a renvoyé une erreur: " + JSON.parse(json, null, 2))
   }
 
   return new Promise((resolve, reject) => {
@@ -73,7 +74,7 @@ const detectNotif = (bot, json) => {
 		.then(() => resolve())
           .catch(err => reject(err))
       	}
-      	bot.say('botalive', `Everything\'s good. Notifid: ${notifs[0].id}. Modules: ${modules}`)
+      	bot.say('botalive', `Everything\'s good. Notifid: ${notifs[0].id}`)
 		.then(() => resolve())
         .catch(err => reject(err))
       })
@@ -81,7 +82,7 @@ const detectNotif = (bot, json) => {
   })
 }
 
-fs.readFile('config', (err, res) => {
+fs.readFile(__dirname + '/config', (err, res) => {
   config = JSON.parse(res)
 
   // create a bot
